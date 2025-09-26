@@ -4,54 +4,59 @@ from flask_cors import CORS
 import requests
 import re
 from datetime import datetime
+import csv
+from io import StringIO
 
 app = Flask(__name__)
 CORS(app)
 
+# Hardcoded fallback database for quick lookups and demo
+DEFAULT_AIRPORTS = {
+    'KTUS': {'icao': 'KTUS', 'name': 'Tucson International', 'latitude': 32.1161, 'longitude': -110.9411, 'city': 'Tucson', 'country': 'USA'},
+    'KLAX': {'icao': 'KLAX', 'name': 'Los Angeles International', 'latitude': 33.9425, 'longitude': -118.4081, 'city': 'Los Angeles', 'country': 'USA'},
+    'KJFK': {'icao': 'KJFK', 'name': 'John F Kennedy International', 'latitude': 40.6398, 'longitude': -73.7789, 'city': 'New York', 'country': 'USA'}
+    # Add more if needed
+}
 
 def get_airport_info(icao_code):
+<<<<<<< HEAD
     """Get airport info from OpenFlights - WORKING VERSION"""
+=======
+    """Get airport info from OpenFlights or fallback."""
+>>>>>>> e6cae0760c943d5650975a5974263acb34576ba6
     icao_code = icao_code.upper().strip()
+    # Quick fallback first
+    if icao_code in DEFAULT_AIRPORTS:
+        return DEFAULT_AIRPORTS[icao_code]
 
     try:
         url = "https://raw.githubusercontent.com/jpatokal/openflights/master/data/airports.dat"
         response = requests.get(url, timeout=10)
-
         if response.status_code == 200:
-            for line in response.text.split('\n'):
-                if line.strip() and '","' in line:
-                    try:
-                        parts = line.split('","')
-                        if len(parts) >= 8:
-                            name = parts[1].strip('"')
-                            city = parts[2].strip('"')
-                            country = parts[3].strip('"')
-                            iata = parts[4].strip('"')
-                            icao = parts[5].strip('"')
-                            lat = parts[6].strip('"')
-                            lon = parts[7].strip('"')
-
-                            if (icao.upper() == icao_code or iata.upper() == icao_code) and name != "\\N":
-                                try:
-                                    latitude = float(
-                                        lat) if lat != "\\N" else None
-                                    longitude = float(
-                                        lon) if lon != "\\N" else None
-                                except:
-                                    latitude = longitude = None
-
-                                return {
-                                    'icao': icao.upper() if icao != "\\N" else icao_code,
-                                    'iata': iata.upper() if iata != "\\N" else '',
-                                    'name': name,
-                                    'city': city,
-                                    'country': country,
-                                    'latitude': latitude,
-                                    'longitude': longitude,
-                                    'source': 'OpenFlights'
-                                }
-                    except:
-                        continue
+            reader = csv.reader(StringIO(response.text))
+            for parts in reader:
+                if len(parts) >= 8:
+                    name = parts[1]
+                    iata = parts[4]
+                    icao = parts[5]
+                    lat = parts[6]
+                    lon = parts[7]
+                    if (icao.upper() == icao_code or iata.upper() == icao_code) and name != "\\N":
+                        try:
+                            latitude = float(lat) if lat != "\\N" else None
+                            longitude = float(lon) if lon != "\\N" else None
+                        except:
+                            latitude = longitude = None
+                        return {
+                            'icao': icao.upper() if icao != "\\N" else icao_code,
+                            'iata': iata.upper() if iata != "\\N" else '',
+                            'name': name,
+                            'city': parts[2],
+                            'country': parts[3],
+                            'latitude': latitude,
+                            'longitude': longitude,
+                            'source': 'OpenFlights'
+                        }
     except Exception as e:
         print(f"Airport lookup failed: {e}")
 
@@ -60,13 +65,12 @@ def get_airport_info(icao_code):
         'icao': icao_code,
         'iata': '',
         'name': f'Airport {icao_code}',
-        'city': 'Unknown',
-        'country': 'Unknown',
+        'city': '',
+        'country': '',
         'latitude': None,
         'longitude': None,
         'source': 'Fallback'
     }
-
 
 def get_weather_data(icao):
     """Get weather data - WORKING VERSION"""
@@ -116,7 +120,6 @@ def get_weather_data(icao):
 
     return test_data.get(icao, f'{icao} {day}{hour}{minute}Z 27010KT 9999 FEW030 22/18 Q1013')
 
-
 def analyze_severity(metar_text):
     """Analyze severity - WORKING VERSION"""
     if not metar_text:
@@ -132,6 +135,7 @@ def analyze_severity(metar_text):
 
     return 'CLEAR'
 
+<<<<<<< HEAD
 
 def create_detailed_analysis(metar_text):
     """Create detailed analysis sections - NEW ADDITION"""
@@ -286,10 +290,11 @@ def create_detailed_analysis(metar_text):
 # Serve your index.html file - WORKING
 
 
+=======
+>>>>>>> e6cae0760c943d5650975a5974263acb34576ba6
 @app.route('/')
 def serve_index():
     return send_from_directory('.', 'index.html')
-
 
 @app.route('/health')
 def health():
@@ -298,7 +303,6 @@ def health():
         "timestamp": datetime.utcnow().isoformat(),
         "message": "AeroLish backend with detailed analysis ready!"
     })
-
 
 @app.route('/api/weather/<icao>')
 def get_weather(icao):
@@ -356,7 +360,6 @@ def get_weather(icao):
     except Exception as e:
         print(f"❌ Error: {e}")
         return jsonify({'error': str(e)}), 500
-
 
 @app.route('/api/route')
 def analyze_route():
@@ -422,7 +425,6 @@ def analyze_route():
     except Exception as e:
         print(f"❌ Route error: {e}")
         return jsonify({'error': str(e)}), 500
-
 
 if __name__ == '__main__':
     print("🛫 AeroLish - Working Version with Detailed Analysis")
