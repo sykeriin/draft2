@@ -1,0 +1,1168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aero Lish - Professional Aviation Weather</title>
+    
+    <!-- Leaflet for maps -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Custom styles -->
+    <style>
+        :root {
+            /* Light mode colors */
+            --bg-light: #ffffff;
+            --surface-light: #f8fafc;
+            --text-light: #1e293b;
+            --text-muted-light: #64748b;
+            --border-light: #e2e8f0;
+            --primary-light: #8b5cf6;
+            --primary-hover-light: #7c3aed;
+            --accent-light: #a855f7;
+            
+            /* Dark mode colors */
+            --bg-dark: #0f172a;
+            --surface-dark: #1e293b;
+            --text-dark: #f1f5f9;
+            --text-muted-dark: #94a3b8;
+            --border-dark: #334155;
+            --primary-dark: #22c55e;
+            --primary-hover-dark: #16a34a;
+            --accent-dark: #eab308;
+            
+            /* Current theme (will be updated by JS) */
+            --bg: var(--bg-light);
+            --surface: var(--surface-light);
+            --text: var(--text-light);
+            --text-muted: var(--text-muted-light);
+            --border: var(--border-light);
+            --primary: var(--primary-light);
+            --primary-hover: var(--primary-hover-light);
+            --accent: var(--accent-light);
+        }
+
+        /* Dark theme override */
+        [data-theme="dark"] {
+            --bg: var(--bg-dark);
+            --surface: var(--surface-dark);
+            --text: var(--text-dark);
+            --text-muted: var(--text-muted-dark);
+            --border: var(--border-dark);
+            --primary: var(--primary-dark);
+            --primary-hover: var(--primary-hover-dark);
+            --accent: var(--accent-dark);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            transition: all 0.3s ease;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 30px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .theme-toggle {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Search section */
+        .search-section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+
+        #airport-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        #airport-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(139, 92, 246, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--surface);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Data filters */
+        .data-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .filter-group:hover {
+            border-color: var(--primary);
+        }
+
+        .filter-group.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .filter-checkbox {
+            margin: 0;
+        }
+
+        /* Main content grid */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .panel-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        /* Weather briefing styles */
+        .weather-briefing {
+            min-height: 400px;
+        }
+
+        .airport-card {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .airport-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .airport-name {
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .severity-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .severity-CLEAR {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .severity-MODERATE {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .severity-SEVERE {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .severity-UNKNOWN {
+            background: #f1f5f9;
+            color: #64748b;
+        }
+
+        /* Dark theme severity badges */
+        [data-theme="dark"] .severity-CLEAR {
+            background: #166534;
+            color: #dcfce7;
+        }
+
+        [data-theme="dark"] .severity-MODERATE {
+            background: #92400e;
+            color: #fef3c7;
+        }
+
+        [data-theme="dark"] .severity-SEVERE {
+            background: #dc2626;
+            color: #fee2e2;
+        }
+
+        .weather-summary {
+            margin-top: 12px;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .ai-briefing {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 16px;
+        }
+
+        .ai-section {
+            margin-bottom: 16px;
+        }
+
+        .ai-section h4 {
+            color: var(--primary);
+            margin-bottom: 8px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .altitude-analysis {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .altitude-band {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .altitude-band h5 {
+            color: var(--primary);
+            margin-bottom: 6px;
+        }
+
+        /* Raw data toggle */
+        .raw-data-section {
+            margin-top: 16px;
+            border-top: 1px solid var(--border);
+            padding-top: 16px;
+        }
+
+        .raw-data-toggle {
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .raw-data-content {
+            margin-top: 12px;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .raw-data-content.expanded {
+            max-height: 500px;
+        }
+
+        .raw-code {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            margin-bottom: 8px;
+            overflow-x: auto;
+        }
+
+        /* Map styles */
+        .map-container {
+            min-height: 500px;
+        }
+
+        #weather-map {
+            width: 100%;
+            height: 500px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .map-controls {
+            margin-top: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .route-info {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        /* Loading states */
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border);
+            border-top: 2px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Status messages */
+        .status-message {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            border: 1px solid;
+        }
+
+        .status-success {
+            background: #dcfce7;
+            color: #166534;
+            border-color: #22c55e;
+        }
+
+        .status-error {
+            background: #fee2e2;
+            color: #dc2626;
+            border-color: #ef4444;
+        }
+
+        .status-info {
+            background: #dbeafe;
+            color: #1d4ed8;
+            border-color: #3b82f6;
+        }
+
+        /* Dark theme status messages */
+        [data-theme="dark"] .status-success {
+            background: rgba(34, 197, 94, 0.1);
+            color: #4ade80;
+        }
+
+        [data-theme="dark"] .status-error {
+            background: rgba(239, 68, 68, 0.1);
+            color: #f87171;
+        }
+
+        [data-theme="dark"] .status-info {
+            background: rgba(59, 130, 246, 0.1);
+            color: #60a5fa;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .search-row {
+                flex-direction: column;
+            }
+
+            #airport-input {
+                width: 100%;
+            }
+
+            .data-filters {
+                justify-content: center;
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 16px;
+            }
+        }
+
+        /* Additional enhancements */
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--surface);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary);
+        }
+    </style>
+</head>
+<body data-theme="light">
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">✈️ Aero Lish Professional</div>
+            <div class="header-controls">
+                <button class="theme-toggle" onclick="toggleTheme()">
+                    🌙 Dark Mode
+                </button>
+                <button class="btn btn-secondary" onclick="checkServerHealth()">
+                    📡 Server Status
+                </button>
+            </div>
+        </header>
+
+        <!-- Search Section -->
+        <section class="search-section">
+            <div class="search-row">
+                <input 
+                    type="text" 
+                    id="airport-input" 
+                    placeholder="Enter airport codes (e.g., KTUS or KLAX,KPHX,KSFO for route)"
+                    onkeypress="handleEnterKey(event)"
+                />
+                <button class="btn btn-primary" onclick="analyzeWeather()">
+                    🌤️ Analyze Weather
+                </button>
+            </div>
+
+            <!-- Data Filters -->
+            <div class="data-filters">
+                <label class="filter-group active" data-filter="metar">
+                    <input type="checkbox" class="filter-checkbox" checked> METAR
+                </label>
+                <label class="filter-group active" data-filter="taf">
+                    <input type="checkbox" class="filter-checkbox" checked> TAF
+                </label>
+                <label class="filter-group" data-filter="pirep">
+                    <input type="checkbox" class="filter-checkbox"> PIREP
+                </label>
+                <label class="filter-group" data-filter="sigmet">
+                    <input type="checkbox" class="filter-checkbox"> SIGMET
+                </label>
+                <label class="filter-group" data-filter="airmet">
+                    <input type="checkbox" class="filter-checkbox"> AIRMET
+                </label>
+                <label class="filter-group" data-filter="winds_aloft">
+                    <input type="checkbox" class="filter-checkbox"> Winds Aloft
+                </label>
+                <label class="filter-group active" data-filter="ai">
+                    <input type="checkbox" class="filter-checkbox" checked> AI Analysis
+                </label>
+            </div>
+        </section>
+
+        <!-- Status Messages -->
+        <div id="status-container"></div>
+
+        <!-- Main Content Grid -->
+        <div class="main-grid">
+            <!-- Weather Briefing Panel -->
+            <div class="panel weather-briefing">
+                <div class="panel-header">
+                    <h2 class="panel-title">📋 Weather Briefing</h2>
+                </div>
+                <div id="briefing-content">
+                    <div style="text-align: center; padding: 60px 20px; color: var(--text-muted);">
+                        <div style="font-size: 48px; margin-bottom: 16px;">✈️</div>
+                        <h3>Ready for Weather Analysis</h3>
+                        <p>Enter airport codes above to get started with comprehensive weather briefings.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Map Panel -->
+            <div class="panel map-container">
+                <div class="panel-header">
+                    <h2 class="panel-title">🗺️ Interactive Map</h2>
+                </div>
+                <div id="weather-map"></div>
+                <div class="map-controls">
+                    <div class="route-info" id="route-info">
+                        Map will show airport locations and route weather conditions
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let map;
+        let markers = [];
+        let routeLine = null;
+        let currentData = null;
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeMap();
+            setupFilterListeners();
+            checkServerHealth();
+            
+            // Load theme preference
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            setTheme(savedTheme);
+        });
+
+        // Theme management
+        function toggleTheme() {
+            const currentTheme = document.body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            setTheme(newTheme);
+        }
+
+        function setTheme(theme) {
+            document.body.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+            
+            const toggleBtn = document.querySelector('.theme-toggle');
+            toggleBtn.textContent = theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode';
+        }
+
+        // Map initialization
+        function initializeMap() {
+            map = L.map('weather-map').setView([39.8283, -98.5795], 4);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 18
+            }).addTo(map);
+        }
+
+        // Filter management
+        function setupFilterListeners() {
+            document.querySelectorAll('.filter-group').forEach(group => {
+                group.addEventListener('click', function() {
+                    const checkbox = this.querySelector('.filter-checkbox');
+                    checkbox.checked = !checkbox.checked;
+                    
+                    if (checkbox.checked) {
+                        this.classList.add('active');
+                    } else {
+                        this.classList.remove('active');
+                    }
+                });
+            });
+        }
+
+        function getActiveFilters() {
+            const active = {};
+            document.querySelectorAll('.filter-group.active').forEach(group => {
+                const filter = group.getAttribute('data-filter');
+                active[filter] = true;
+            });
+            return active;
+        }
+
+        // Status message management
+        function showStatus(message, type = 'info', duration = 5000) {
+            const container = document.getElementById('status-container');
+            const statusDiv = document.createElement('div');
+            statusDiv.className = `status-message status-${type} fade-in`;
+            statusDiv.textContent = message;
+            
+            container.appendChild(statusDiv);
+            
+            if (duration > 0) {
+                setTimeout(() => {
+                    statusDiv.remove();
+                }, duration);
+            }
+            
+            return statusDiv;
+        }
+
+        // Server health check
+        async function checkServerHealth() {
+            try {
+                const response = await fetch('/health');
+                const data = await response.json();
+                
+                if (data.status === 'healthy') {
+                    showStatus('✅ Server is healthy and ready', 'success', 3000);
+                } else {
+                    showStatus('⚠️ Server issues detected', 'error');
+                }
+            } catch (error) {
+                showStatus('❌ Cannot connect to server', 'error');
+            }
+        }
+
+        // Input handling
+        function handleEnterKey(event) {
+            if (event.key === 'Enter') {
+                analyzeWeather();
+            }
+        }
+
+        // Main weather analysis function
+        async function analyzeWeather() {
+            const input = document.getElementById('airport-input').value.trim();
+            
+            if (!input) {
+                showStatus('Please enter airport codes', 'error');
+                return;
+            }
+
+            const briefingContent = document.getElementById('briefing-content');
+            briefingContent.classList.add('loading');
+            
+            // Show loading status
+            const loadingStatus = showStatus('🔄 Analyzing weather data...', 'info', 0);
+            
+            try {
+                const airports = input.split(',').map(code => code.trim().toUpperCase());
+                const filters = getActiveFilters();
+                
+                let data;
+                if (airports.length === 1) {
+                    // Single airport analysis
+                    data = await analyzeSingleAirport(airports[0], filters);
+                } else {
+                    // Route analysis
+                    data = await analyzeRoute(airports, filters);
+                }
+                
+                currentData = data;
+                displayWeatherData(data);
+                updateMap(data);
+                
+                loadingStatus.remove();
+                showStatus('✅ Weather analysis complete', 'success');
+                
+            } catch (error) {
+                console.error('Weather analysis failed:', error);
+                loadingStatus.remove();
+                showStatus(`❌ Analysis failed: ${error.message}`, 'error');
+                
+                briefingContent.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+                        <div style="font-size: 48px; margin-bottom: 16px;">❌</div>
+                        <h3>Analysis Failed</h3>
+                        <p>${error.message}</p>
+                        <button class="btn btn-primary" onclick="analyzeWeather()" style="margin-top: 16px;">
+                            Try Again
+                        </button>
+                    </div>
+                `;
+            } finally {
+                briefingContent.classList.remove('loading');
+            }
+        }
+
+        // Single airport analysis
+        async function analyzeSingleAirport(icao, filters) {
+            const params = new URLSearchParams();
+            
+            Object.keys(filters).forEach(filter => {
+                if (filter !== 'ai') {
+                    params.append(`include_${filter}`, 'true');
+                } else {
+                    params.append('include_ai', 'true');
+                }
+            });
+            
+            const response = await fetch(`/api/weather/${icao}?${params}`);
+            
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || 'Failed to fetch weather data');
+            }
+            
+            return await response.json();
+        }
+
+        // Route analysis
+        async function analyzeRoute(airports, filters) {
+            const params = new URLSearchParams();
+            params.append('airports', airports.join(','));
+            
+            Object.keys(filters).forEach(filter => {
+                if (filter !== 'ai') {
+                    params.append(`include_${filter}`, 'true');
+                } else {
+                    params.append('include_ai', 'true');
+                }
+            });
+            
+            const response = await fetch(`/api/route?${params}`);
+            
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || 'Failed to analyze route');
+            }
+            
+            return await response.json();
+        }
+
+        // Display weather data
+        function displayWeatherData(data) {
+            const briefingContent = document.getElementById('briefing-content');
+            
+            if (data.icao) {
+                // Single airport display
+                displaySingleAirportData(data, briefingContent);
+            } else if (data.route) {
+                // Route display
+                displayRouteData(data, briefingContent);
+            }
+        }
+
+        function displaySingleAirportData(data, container) {
+            const airport = data.airport;
+            const weather = data.weather;
+            const aiBriefing = data.ai_briefing;
+            
+            let html = `
+                <div class="airport-card fade-in">
+                    <div class="airport-header">
+                        <div>
+                            <div class="airport-name">${data.icao} - ${airport.name || 'Unknown Airport'}</div>
+                            <div style="font-size: 14px; color: var(--text-muted);">
+                                ${airport.city || 'Unknown'}, ${airport.country || 'Unknown'}
+                            </div>
+                        </div>
+                        <div class="severity-badge severity-${weather.metar?.parsed?.severity || 'UNKNOWN'}">
+                            ${weather.metar?.parsed?.severity || 'UNKNOWN'}
+                        </div>
+                    </div>
+                    
+                    <div class="weather-summary">
+                        Current conditions: ${weather.metar?.raw_text || 'No METAR data available'}
+                    </div>
+            `;
+            
+            // Add AI briefing if available
+            if (aiBriefing && aiBriefing.executive_summary) {
+                html += `
+                    <div class="ai-briefing">
+                        <div class="ai-section">
+                            <h4>🤖 AI Executive Summary</h4>
+                            <p>${aiBriefing.executive_summary}</p>
+                        </div>
+                `;
+                
+                if (aiBriefing.detailed_analysis) {
+                    html += `
+                        <div class="ai-section">
+                            <h4>📊 Detailed Analysis</h4>
+                            <p>${aiBriefing.detailed_analysis}</p>
+                        </div>
+                    `;
+                }
+                
+                if (aiBriefing.operational_impact) {
+                    html += `
+                        <div class="ai-section">
+                            <h4>✈️ Operational Impact</h4>
+                            <p>${aiBriefing.operational_impact}</p>
+                        </div>
+                    `;
+                }
+                
+                if (aiBriefing.recommendations && Array.isArray(aiBriefing.recommendations)) {
+                    html += `
+                        <div class="ai-section">
+                            <h4>💡 Recommendations</h4>
+                            <ul>
+                                ${aiBriefing.recommendations.map(rec => `<li>${rec}</li>`).join('')}
+                            </ul>
+                        </div>
+                    `;
+                }
+                
+                html += '</div>';
+            }
+            
+            // Add raw data section
+            html += createRawDataSection(weather, data.icao);
+            html += '</div>';
+            
+            container.innerHTML = html;
+        }
+
+        function displayRouteData(data, container) {
+            const route = data.route;
+            const analysis = data.analysis;
+            const aiBriefing = data.ai_briefing;
+            
+            let html = `
+                <div class="fade-in">
+                    <div style="margin-bottom: 20px;">
+                        <h3>Route Analysis: ${route.airports.join(' → ')}</h3>
+                        <div class="severity-badge severity-${data.overall_conditions}">
+                            Overall: ${data.overall_conditions}
+                        </div>
+                    </div>
+            `;
+            
+            // Add AI briefing for route
+            if (aiBriefing && aiBriefing.executive_summary) {
+                html += `
+                    <div class="ai-briefing" style="margin-bottom: 20px;">
+                        <div class="ai-section">
+                            <h4>🤖 Route Executive Summary</h4>
+                            <p>${aiBriefing.executive_summary}</p>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Add airport cards for each airport in route
+            if (analysis && analysis.airports) {
+                analysis.airports.forEach(airportData => {
+                    html += createAirportCard(airportData);
+                });
+            }
+            
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function createAirportCard(airportData) {
+            const airport = airportData.info;
+            const weather = airportData.current_weather;
+            const severity = weather?.parsed?.severity || 'UNKNOWN';
+            
+            return `
+                <div class="airport-card">
+                    <div class="airport-header">
+                        <div>
+                            <div class="airport-name">${airportData.code} - ${airport.name || 'Unknown Airport'}</div>
+                            <div style="font-size: 14px; color: var(--text-muted);">
+                                ${airport.city || 'Unknown'}, ${airport.country || 'Unknown'}
+                            </div>
+                        </div>
+                        <div class="severity-badge severity-${severity}">
+                            ${severity}
+                        </div>
+                    </div>
+                    
+                    <div class="weather-summary">
+                        ${weather?.raw_text || 'No weather data available'}
+                    </div>
+                    
+                    ${createRawDataSection(weather ? {metar: weather} : {}, airportData.code)}
+                </div>
+            `;
+        }
+
+        function createRawDataSection(weather, icao) {
+            return `
+                <div class="raw-data-section">
+                    <button class="raw-data-toggle" onclick="toggleRawData('${icao}')">
+                        📝 Show Raw Data
+                    </button>
+                    <div class="raw-data-content" id="raw-data-${icao}">
+                        ${weather.metar?.raw_text ? `
+                            <div>
+                                <strong>METAR:</strong>
+                                <div class="raw-code">${weather.metar.raw_text}</div>
+                            </div>
+                        ` : ''}
+                        ${weather.taf?.raw_text ? `
+                            <div>
+                                <strong>TAF:</strong>
+                                <div class="raw-code">${weather.taf.raw_text}</div>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function toggleRawData(icao) {
+            const content = document.getElementById(`raw-data-${icao}`);
+            const button = content.previousElementSibling;
+            
+            if (content.classList.contains('expanded')) {
+                content.classList.remove('expanded');
+                button.textContent = '📝 Show Raw Data';
+            } else {
+                content.classList.add('expanded');
+                button.textContent = '📝 Hide Raw Data';
+            }
+        }
+
+        // Map management
+        function updateMap(data) {
+            // Clear existing markers and routes
+            clearMap();
+            
+            if (data.icao) {
+                // Single airport
+                updateMapForSingleAirport(data);
+            } else if (data.timeline) {
+                // Route
+                updateMapForRoute(data);
+            }
+        }
+
+        function clearMap() {
+            markers.forEach(marker => map.removeLayer(marker));
+            markers = [];
+            
+            if (routeLine) {
+                map.removeLayer(routeLine);
+                routeLine = null;
+            }
+        }
+
+        function updateMapForSingleAirport(data) {
+            const airport = data.airport;
+            
+            if (airport.latitude && airport.longitude) {
+                const severity = data.weather?.metar?.parsed?.severity || 'UNKNOWN';
+                const color = getSeverityColor(severity);
+                
+                const marker = L.circleMarker([airport.latitude, airport.longitude], {
+                    radius: 12,
+                    fillColor: color,
+                    color: '#ffffff',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                }).addTo(map);
+                
+                marker.bindPopup(`
+                    <div>
+                        <strong>${data.icao} - ${airport.name}</strong><br>
+                        <span style="color: ${color};">${severity} conditions</span><br>
+                        ${airport.city}, ${airport.country}
+                    </div>
+                `);
+                
+                markers.push(marker);
+                map.setView([airport.latitude, airport.longitude], 10);
+                
+                document.getElementById('route-info').textContent = 
+                    `📍 ${data.icao} - ${airport.name} | Conditions: ${severity}`;
+            }
+        }
+
+        function updateMapForRoute(data) {
+            const timeline = data.timeline;
+            const validPoints = timeline.filter(point => point.latitude && point.longitude);
+            
+            if (validPoints.length === 0) return;
+            
+            // Create markers for each airport
+            validPoints.forEach((point, index) => {
+                const color = getSeverityColor(point.severity);
+                
+                const marker = L.circleMarker([point.latitude, point.longitude], {
+                    radius: 10,
+                    fillColor: color,
+                    color: '#ffffff',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                }).addTo(map);
+                
+                const position = index === 0 ? 'Departure' : 
+                               index === validPoints.length - 1 ? 'Arrival' : 'Waypoint';
+                
+                marker.bindPopup(`
+                    <div>
+                        <strong>${point.icao} - ${point.name}</strong><br>
+                        <span style="color: ${color};">${point.severity} conditions</span><br>
+                        ${position}
+                    </div>
+                `);
+                
+                markers.push(marker);
+            });
+            
+            // Create route line
+            if (validPoints.length > 1) {
+                const coordinates = validPoints.map(point => [point.latitude, point.longitude]);
+                const worstSeverity = getWorstSeverity(validPoints.map(p => p.severity));
+                const routeColor = getSeverityColor(worstSeverity);
+                
+                routeLine = L.polyline(coordinates, {
+                    color: routeColor,
+                    weight: 4,
+                    opacity: 0.8
+                }).addTo(map);
+                
+                map.fitBounds(routeLine.getBounds(), { padding: [20, 20] });
+            } else {
+                map.setView([validPoints[0].latitude, validPoints[0].longitude], 8);
+            }
+            
+            // Update route info
+            const routeString = data.route.airports.join(' → ');
+            document.getElementById('route-info').textContent = 
+                `🛫 Route: ${routeString} | Overall: ${data.overall_conditions}`;
+        }
+
+        function getSeverityColor(severity) {
+            const colors = {
+                'SEVERE': '#dc2626',
+                'MODERATE': '#f59e0b',
+                'CLEAR': '#22c55e',
+                'UNKNOWN': '#64748b'
+            };
+            return colors[severity] || colors.UNKNOWN;
+        }
+
+        function getWorstSeverity(severities) {
+            if (severities.includes('SEVERE')) return 'SEVERE';
+            if (severities.includes('MODERATE')) return 'MODERATE';
+            if (severities.includes('CLEAR')) return 'CLEAR';
+            return 'UNKNOWN';
+        }
+    </script>
+</body>
+</html>
