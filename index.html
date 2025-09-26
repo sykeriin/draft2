@@ -537,6 +537,45 @@
             }
         }
 
+        /* Weather Data Sections */
+        .weather-data-section {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            margin: 16px 0;
+        }
+        
+        .weather-data-section h4 {
+            margin: 0 0 12px 0;
+            color: var(--primary);
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .weather-content {
+            margin-top: 8px;
+        }
+        
+        .no-data {
+            color: var(--text-muted);
+            font-style: italic;
+            padding: 8px;
+            text-align: center;
+        }
+        
+        .winds-table {
+            display: grid;
+            gap: 8px;
+        }
+        
+        .wind-entry {
+            padding: 8px;
+            background: var(--surface);
+            border-radius: 6px;
+            border: 1px solid var(--border);
+        }
+
         /* Custom scrollbar */
         ::-webkit-scrollbar {
             width: 8px;
@@ -724,6 +763,11 @@
                         this.classList.add('active');
                     } else {
                         this.classList.remove('active');
+                    }
+                    
+                    // Re-render current data if available
+                    if (currentData) {
+                        displayWeatherData(currentData);
                     }
                 });
             });
@@ -960,7 +1004,12 @@
                     </div>
                     
                     <div class="weather-summary">
-                        <strong>Current conditions:</strong> ${weather.metar?.raw_text || 'No METAR data available'}
+                        <strong>Current conditions:</strong> ${weather.metar?.english_summary || weather.metar?.raw_text || 'No weather data available'}
+                    </div>
+                    
+                    <!-- Additional Weather Data -->
+                    <div class="additional-weather-data">
+                        ${createWeatherDataSections(weather)}
                     </div>
             `;
             
@@ -1062,7 +1111,7 @@
                     </div>
                     
                     <div class="weather-summary">
-                        <strong>Current:</strong> ${weather?.raw_text || 'No weather data available'}
+                        <strong>Current:</strong> ${weather?.english_summary || weather?.raw_text || 'No weather data available'}
                     </div>
                     
                     ${createRawDataSection(weather ? {metar: weather} : {}, airportData.code)}
@@ -1070,25 +1119,115 @@
             `;
         }
 
+        function createWeatherDataSections(weather) {
+            const filters = getActiveFilters();
+            let sections = '';
+            
+            // TAF Section
+            if (filters.taf && weather.taf) {
+                sections += `
+                    <div class="weather-data-section" data-type="taf">
+                        <h4>📋 TAF (Terminal Aerodrome Forecast)</h4>
+                        <div class="weather-content">
+                            ${weather.taf.raw_text ? 
+                                `<div class="raw-code">${weather.taf.raw_text}</div>
+                                 ${weather.taf.source ? `<small>Source: ${weather.taf.source}</small>` : ''}` :
+                                '<div class="no-data">No TAF data available</div>'
+                            }
+                        </div>
+                    </div>`;
+            }
+            
+            // PIREP Section
+            if (filters.pirep && weather.pirep) {
+                sections += `
+                    <div class="weather-data-section" data-type="pirep">
+                        <h4>✈️ PIREP (Pilot Reports)</h4>
+                        <div class="weather-content">
+                            ${weather.pirep.count > 0 ? 
+                                weather.pirep.reports.map(report => 
+                                    `<div class="raw-code">${report.raw_text}</div>`
+                                ).join('') :
+                                '<div class="no-data">No PIREP data available</div>'
+                            }
+                        </div>
+                    </div>`;
+            }
+            
+            // SIGMET Section
+            if (filters.sigmet && weather.sigmet) {
+                sections += `
+                    <div class="weather-data-section" data-type="sigmet">
+                        <h4>⚠️ SIGMET (Significant Meteorological Information)</h4>
+                        <div class="weather-content">
+                            ${weather.sigmet.count > 0 ? 
+                                weather.sigmet.reports.slice(0, 3).map(report => 
+                                    `<div class="raw-code">${report.raw_text || 'SIGMET data'}</div>`
+                                ).join('') :
+                                '<div class="no-data">No SIGMET data available</div>'
+                            }
+                        </div>
+                    </div>`;
+            }
+            
+            // AIRMET Section
+            if (filters.airmet && weather.airmet) {
+                sections += `
+                    <div class="weather-data-section" data-type="airmet">
+                        <h4>📡 AIRMET (Airmen's Meteorological Information)</h4>
+                        <div class="weather-content">
+                            ${weather.airmet.count > 0 ? 
+                                weather.airmet.reports.slice(0, 3).map(report => 
+                                    `<div class="raw-code">${report.raw_text || 'AIRMET data'}</div>`
+                                ).join('') :
+                                '<div class="no-data">No AIRMET data available</div>'
+                            }
+                        </div>
+                    </div>`;
+            }
+            
+            // Winds Aloft Section
+            if (filters.winds_aloft && weather.winds_aloft && weather.winds_aloft.altitudes) {
+                sections += `
+                    <div class="weather-data-section" data-type="winds_aloft">
+                        <h4>🌬️ Winds Aloft</h4>
+                        <div class="weather-content">
+                            <div class="winds-table">
+                                ${Object.entries(weather.winds_aloft.altitudes).map(([alt, data]) => 
+                                    `<div class="wind-entry">
+                                        <strong>${alt} ft:</strong> ${data.wind_dir}°/${data.wind_speed}kt, Temp: ${data.temperature}°C
+                                    </div>`
+                                ).join('')}
+                            </div>
+                        </div>
+                    </div>`;
+            }
+            
+            return sections;
+        }
+        
         function createRawDataSection(weather, icao) {
+            const filters = getActiveFilters();
+            if (!filters.metar && !filters.taf) return ''; // Hide if both METAR and TAF are disabled
+            
             return `
                 <div class="raw-data-section">
                     <button class="raw-data-toggle" onclick="toggleRawData('${icao}')">
                         📝 Show Raw Data
                     </button>
                     <div class="raw-data-content" id="raw-data-${icao}">
-                        ${weather?.metar?.raw_text || weather?.raw_text ? `
+                        ${filters.metar ? (weather?.metar?.raw_text || weather?.raw_text ? `
                             <div>
                                 <strong>METAR:</strong>
                                 <div class="raw-code">${weather.metar?.raw_text || weather.raw_text || 'No METAR data'}</div>
                             </div>
-                        ` : '<div class="raw-code">No METAR data available</div>'}
-                        ${weather?.taf?.raw_text ? `
+                        ` : '<div class="raw-code">No METAR data available</div>') : ''}
+                        ${filters.taf ? (weather?.taf?.raw_text ? `
                             <div>
                                 <strong>TAF:</strong>
                                 <div class="raw-code">${weather.taf.raw_text}</div>
                             </div>
-                        ` : '<div class="raw-code">No TAF data available</div>'}
+                        ` : '<div class="raw-code">No TAF data available</div>') : ''}
                     </div>
                 </div>
             `;

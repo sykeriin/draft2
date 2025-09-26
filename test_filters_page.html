@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Filter Test</title>
+    <style>
+        .filter-active { background: green; color: white; }
+        .weather-section { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+    <h2>Weather Data Filter Test</h2>
+    <p>Testing TAF, PIREP, SIGMET, AIRMET, Winds Aloft filters</p>
+    
+    <div>
+        <label><input type="checkbox" id="taf" checked> TAF</label>
+        <label><input type="checkbox" id="pirep" checked> PIREP</label>
+        <label><input type="checkbox" id="sigmet" checked> SIGMET</label>
+        <label><input type="checkbox" id="airmet" checked> AIRMET</label>
+        <label><input type="checkbox" id="winds_aloft" checked> Winds Aloft</label>
+    </div>
+    
+    <button onclick="testAPI()">Test KTUS Weather</button>
+    
+    <div id="results"></div>
+
+    <script>
+        async function testAPI() {
+            try {
+                const response = await fetch('http://localhost:5000/api/weather/KTUS');
+                const data = await response.json();
+                
+                let html = '<h3>API Response:</h3>';
+                html += '<div class="weather-section"><strong>METAR English:</strong> ' + data.weather.metar.english_summary + '</div>';
+                
+                if (document.getElementById('taf').checked) {
+                    html += '<div class="weather-section"><strong>TAF:</strong> ' + (data.weather.taf.raw_text || 'No TAF data') + '</div>';
+                }
+                
+                if (document.getElementById('pirep').checked) {
+                    html += '<div class="weather-section"><strong>PIREP:</strong> ' + data.weather.pirep.count + ' reports</div>';
+                }
+                
+                if (document.getElementById('sigmet').checked) {
+                    html += '<div class="weather-section"><strong>SIGMET:</strong> ' + data.weather.sigmet.count + ' reports</div>';
+                }
+                
+                if (document.getElementById('airmet').checked) {
+                    html += '<div class="weather-section"><strong>AIRMET:</strong> ' + data.weather.airmet.count + ' reports</div>';
+                }
+                
+                if (document.getElementById('winds_aloft').checked) {
+                    html += '<div class="weather-section"><strong>Winds Aloft:</strong> ' + Object.keys(data.weather.winds_aloft.altitudes).length + ' levels</div>';
+                }
+                
+                document.getElementById('results').innerHTML = html;
+                
+            } catch (error) {
+                document.getElementById('results').innerHTML = '<div style="color:red">Error: ' + error.message + '</div>';
+            }
+        }
+        
+        // Auto-test on load
+        window.addEventListener('load', testAPI);
+    </script>
+</body>
+</html>

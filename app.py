@@ -6,6 +6,21 @@ import re
 from datetime import datetime
 import json
 
+# Load environment variables
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # python-dotenv not installed, skip
+
+# Optional AI/deterministic summarization imports
+try:
+    from ai_analysis import WeatherAIAnalyst, tokenize_metar, deterministic_summary
+except Exception:  # If ai_analysis is not available or has issues
+    WeatherAIAnalyst = None
+    tokenize_metar = None
+    deterministic_summary = None
+
 app = Flask(__name__)
 CORS(app)
 
@@ -233,6 +248,39 @@ def get_weather_data(icao):
     return test_data.get(icao, f'{icao} {day}{hour}{minute}Z 27010KT 9999 FEW030 22/18 Q1013')
 
 
+def get_english_summary(icao: str, metar_text: str) -> str:
+    """Return an English summary for the given METAR.
+    Prefers AI (DeepSeek/Gemini) if available, falls back to deterministic summary,
+    and finally returns raw METAR if parsing fails.
+    """
+    mt = metar_text or ""
+    if not mt:
+        return "No METAR available."
+
+    # Try AI first if available and keys likely configured
+    if WeatherAIAnalyst is not None:
+        try:
+            analyst = WeatherAIAnalyst()
+            # Only attempt AI if at least one provider key is present
+            if analyst.deepseek_api_key or analyst.gemini_api_key:
+                text = analyst.summarize_station(icao.upper(), mt)
+                if text:
+                    return text
+        except Exception:
+            pass
+
+    # Deterministic fallback using tokenizer if available
+    if tokenize_metar is not None and deterministic_summary is not None:
+        try:
+            tokens = tokenize_metar(mt)
+            return deterministic_summary(tokens)
+        except Exception:
+            pass
+
+    # Last resort: return raw METAR
+    return mt
+
+
 def analyze_severity(metar_text):
     """Analyze severity - WORKING VERSION"""
     if not metar_text:
@@ -453,7 +501,8 @@ def get_weather(icao):
             'weather': {
                 'metar': {
                     'raw_text': metar_text,
-                    'parsed': {'severity': severity}
+                    'parsed': {'severity': severity},
+                    'english_summary': get_english_summary(icao, metar_text)
                 },
                 'taf': {
                     'raw_text': f'TAF {icao.upper()} {datetime.utcnow().strftime("%d%H%M")}Z 27010KT 9999 FEW030'
@@ -508,7 +557,8 @@ def analyze_route():
                 'info': airport_info,
                 'current_weather': {
                     'raw_text': metar_text,
-                    'parsed': {'severity': severity}
+                    'parsed': {'severity': severity},
+                    'english_summary': get_english_summary(code, metar_text)
                 },
                 'detailed_analysis': detailed_analysis
             })
