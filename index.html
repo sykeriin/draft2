@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aero Lish - Professional Aviation Weather</title>
+    <title>AeroLish - Aviation Weather Made Simple</title>
     
     <!-- Leaflet for maps -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
-    <!-- Custom styles -->
     <style>
         :root {
             /* Light mode colors */
@@ -22,7 +21,7 @@
             --primary-hover-light: #7c3aed;
             --accent-light: #a855f7;
             
-            /* Dark mode colors */
+            /* Dark mode colors with green-yellow gradient */
             --bg-dark: #0f172a;
             --surface-dark: #1e293b;
             --text-dark: #f1f5f9;
@@ -32,7 +31,7 @@
             --primary-hover-dark: #16a34a;
             --accent-dark: #eab308;
             
-            /* Current theme (will be updated by JS) */
+            /* Current theme */
             --bg: var(--bg-light);
             --surface: var(--surface-light);
             --text: var(--text-light);
@@ -43,7 +42,6 @@
             --accent: var(--accent-light);
         }
 
-        /* Dark theme override */
         [data-theme="dark"] {
             --bg: var(--bg-dark);
             --surface: var(--surface-dark);
@@ -86,7 +84,7 @@
         }
 
         .logo {
-            font-size: 24px;
+            font-size: 28px;
             font-weight: 700;
             background: linear-gradient(135deg, var(--primary), var(--accent));
             -webkit-background-clip: text;
@@ -97,45 +95,48 @@
         .header-controls {
             display: flex;
             align-items: center;
-            gap: 20px;
+            gap: 15px;
         }
 
         .theme-toggle {
             background: var(--surface);
             border: 1px solid var(--border);
-            padding: 8px 16px;
-            border-radius: 8px;
+            padding: 10px 16px;
+            border-radius: 10px;
             cursor: pointer;
             transition: all 0.3s ease;
+            color: var(--text);
+            font-size: 14px;
         }
 
         .theme-toggle:hover {
-            background: var(--primary);
+            background: linear-gradient(135deg, var(--primary), var(--accent));
             color: white;
+            transform: translateY(-2px);
         }
 
         /* Search section */
         .search-section {
-            background: var(--surface);
+            background: linear-gradient(135deg, var(--surface), var(--bg));
             border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 24px;
+            border-radius: 20px;
+            padding: 28px;
             margin-bottom: 30px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
         }
 
         .search-row {
             display: flex;
-            gap: 12px;
-            margin-bottom: 20px;
+            gap: 15px;
+            margin-bottom: 24px;
             align-items: center;
         }
 
         #airport-input {
             flex: 1;
-            padding: 12px 16px;
+            padding: 16px 20px;
             border: 2px solid var(--border);
-            border-radius: 12px;
+            border-radius: 15px;
             background: var(--bg);
             color: var(--text);
             font-size: 16px;
@@ -145,29 +146,31 @@
         #airport-input:focus {
             outline: none;
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+            box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1);
         }
 
         .btn {
-            padding: 12px 24px;
+            padding: 16px 28px;
             border: none;
-            border-radius: 12px;
+            border-radius: 15px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
             text-decoration: none;
             display: inline-block;
             text-align: center;
+            font-size: 14px;
         }
 
         .btn-primary {
             background: linear-gradient(135deg, var(--primary), var(--accent));
             color: white;
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
         }
 
         .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(139, 92, 246, 0.3);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
         }
 
         .btn-secondary {
@@ -177,8 +180,9 @@
         }
 
         .btn-secondary:hover {
-            background: var(--primary);
+            background: linear-gradient(135deg, var(--primary), var(--accent));
             color: white;
+            transform: translateY(-2px);
         }
 
         /* Data filters */
@@ -193,22 +197,26 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 8px 16px;
+            padding: 10px 18px;
             background: var(--bg);
-            border: 1px solid var(--border);
-            border-radius: 8px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
             cursor: pointer;
             transition: all 0.3s ease;
+            font-size: 14px;
+            font-weight: 500;
         }
 
         .filter-group:hover {
             border-color: var(--primary);
+            transform: translateY(-1px);
         }
 
         .filter-group.active {
-            background: var(--primary);
+            background: linear-gradient(135deg, var(--primary), var(--accent));
             color: white;
             border-color: var(--primary);
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
         }
 
         .filter-checkbox {
@@ -226,176 +234,157 @@
         .panel {
             background: var(--surface);
             border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 24px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border-radius: 20px;
+            padding: 28px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
         }
 
         .panel-header {
             display: flex;
-            justify-content: between;
+            justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 12px;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
             border-bottom: 1px solid var(--border);
         }
 
         .panel-title {
-            font-size: 18px;
+            font-size: 20px;
             font-weight: 600;
         }
 
         /* Weather briefing styles */
         .weather-briefing {
-            min-height: 400px;
+            min-height: 500px;
         }
 
         .airport-card {
             background: var(--bg);
             border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 16px;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .airport-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
         }
 
         .airport-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 12px;
+            margin-bottom: 16px;
         }
 
         .airport-name {
             font-weight: 600;
-            font-size: 16px;
+            font-size: 18px;
         }
 
         .severity-badge {
-            padding: 4px 12px;
-            border-radius: 20px;
+            padding: 6px 16px;
+            border-radius: 25px;
             font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-
-        .severity-CLEAR {
-            background: #dcfce7;
-            color: #166534;
-        }
-
-        .severity-MODERATE {
-            background: #fef3c7;
-            color: #92400e;
-        }
-
-        .severity-SEVERE {
-            background: #fee2e2;
-            color: #dc2626;
-        }
-
-        .severity-UNKNOWN {
-            background: #f1f5f9;
-            color: #64748b;
-        }
-
-        /* Dark theme severity badges */
-        [data-theme="dark"] .severity-CLEAR {
-            background: #166534;
-            color: #dcfce7;
-        }
-
-        [data-theme="dark"] .severity-MODERATE {
-            background: #92400e;
-            color: #fef3c7;
-        }
-
-        [data-theme="dark"] .severity-SEVERE {
-            background: #dc2626;
-            color: #fee2e2;
-        }
-
-        .weather-summary {
-            margin-top: 12px;
-            color: var(--text-muted);
-            font-size: 14px;
-        }
-
-        .ai-briefing {
-            background: var(--bg);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 16px;
-            margin-top: 16px;
-        }
-
-        .ai-section {
-            margin-bottom: 16px;
-        }
-
-        .ai-section h4 {
-            color: var(--primary);
-            margin-bottom: 8px;
-            font-size: 14px;
+            font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
 
-        .altitude-analysis {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 12px;
-            margin-top: 12px;
+        .severity-CLEAR {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
         }
 
-        .altitude-band {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 12px;
+        .severity-MODERATE {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
         }
 
-        .altitude-band h5 {
-            color: var(--primary);
-            margin-bottom: 6px;
+        .severity-SEVERE {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
         }
 
-        /* Raw data toggle */
-        .raw-data-section {
+        .severity-UNKNOWN {
+            background: linear-gradient(135deg, #6b7280, #4b5563);
+            color: white;
+        }
+
+        .weather-summary {
             margin-top: 16px;
+            color: var(--text-muted);
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        .ai-briefing {
+            background: linear-gradient(135deg, var(--surface), var(--bg));
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .ai-section {
+            margin-bottom: 20px;
+        }
+
+        .ai-section h4 {
+            color: var(--primary);
+            margin-bottom: 10px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            font-weight: 600;
+        }
+
+        /* Raw data section */
+        .raw-data-section {
+            margin-top: 20px;
             border-top: 1px solid var(--border);
-            padding-top: 16px;
+            padding-top: 20px;
         }
 
         .raw-data-toggle {
-            background: none;
+            background: var(--surface);
             border: 1px solid var(--border);
             color: var(--text);
-            padding: 6px 12px;
-            border-radius: 6px;
+            padding: 8px 16px;
+            border-radius: 8px;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 13px;
+            transition: all 0.3s ease;
+        }
+
+        .raw-data-toggle:hover {
+            background: var(--primary);
+            color: white;
         }
 
         .raw-data-content {
-            margin-top: 12px;
+            margin-top: 16px;
             max-height: 0;
             overflow: hidden;
-            transition: max-height 0.3s ease;
+            transition: max-height 0.4s ease;
         }
 
         .raw-data-content.expanded {
-            max-height: 500px;
+            max-height: 600px;
         }
 
         .raw-code {
             background: var(--surface);
             border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 12px;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            margin-bottom: 8px;
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+            font-size: 13px;
+            margin-bottom: 12px;
             overflow-x: auto;
+            line-height: 1.4;
         }
 
         /* Map styles */
@@ -406,12 +395,12 @@
         #weather-map {
             width: 100%;
             height: 500px;
-            border-radius: 12px;
+            border-radius: 16px;
             border: 1px solid var(--border);
         }
 
         .map-controls {
-            margin-top: 12px;
+            margin-top: 16px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -420,6 +409,11 @@
         .route-info {
             color: var(--text-muted);
             font-size: 14px;
+            padding: 12px 16px;
+            background: var(--surface);
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            flex: 1;
         }
 
         /* Loading states */
@@ -436,7 +430,7 @@
             border-radius: 50%;
             animation: spin 1s linear infinite;
             display: inline-block;
-            margin-right: 8px;
+            margin-right: 10px;
         }
 
         @keyframes spin {
@@ -446,44 +440,73 @@
 
         /* Status messages */
         .status-message {
-            padding: 12px 16px;
-            border-radius: 8px;
-            margin-bottom: 16px;
+            padding: 16px 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
             border: 1px solid;
+            font-weight: 500;
         }
 
         .status-success {
-            background: #dcfce7;
+            background: linear-gradient(135deg, #dcfce7, #bbf7d0);
             color: #166534;
             border-color: #22c55e;
         }
 
         .status-error {
-            background: #fee2e2;
+            background: linear-gradient(135deg, #fee2e2, #fecaca);
             color: #dc2626;
             border-color: #ef4444;
         }
 
         .status-info {
-            background: #dbeafe;
+            background: linear-gradient(135deg, #dbeafe, #bfdbfe);
             color: #1d4ed8;
             border-color: #3b82f6;
         }
 
         /* Dark theme status messages */
         [data-theme="dark"] .status-success {
-            background: rgba(34, 197, 94, 0.1);
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(34, 197, 94, 0.1));
             color: #4ade80;
+            border-color: #22c55e;
         }
 
         [data-theme="dark"] .status-error {
-            background: rgba(239, 68, 68, 0.1);
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.1));
             color: #f87171;
+            border-color: #ef4444;
         }
 
         [data-theme="dark"] .status-info {
-            background: rgba(59, 130, 246, 0.1);
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(59, 130, 246, 0.1));
             color: #60a5fa;
+            border-color: #3b82f6;
+        }
+
+        /* Animations */
+        .fade-in {
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { 
+                opacity: 0; 
+                transform: translateY(30px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0); 
+            }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
         }
 
         /* Responsive design */
@@ -506,27 +529,12 @@
 
             .header {
                 flex-direction: column;
-                gap: 16px;
+                gap: 20px;
             }
-        }
 
-        /* Additional enhancements */
-        .fade-in {
-            animation: fadeIn 0.5s ease-in;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .pulse {
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+            .container {
+                padding: 16px;
+            }
         }
 
         /* Custom scrollbar */
@@ -552,7 +560,7 @@
     <div class="container">
         <!-- Header -->
         <header class="header">
-            <div class="logo">✈️ Aero Lish Professional</div>
+            <div class="logo">✈️ AeroLish</div>
             <div class="header-controls">
                 <button class="theme-toggle" onclick="toggleTheme()">
                     🌙 Dark Mode
@@ -580,25 +588,25 @@
             <!-- Data Filters -->
             <div class="data-filters">
                 <label class="filter-group active" data-filter="metar">
-                    <input type="checkbox" class="filter-checkbox" checked> METAR
+                    <input type="checkbox" class="filter-checkbox" checked style="display: none;"> METAR
                 </label>
                 <label class="filter-group active" data-filter="taf">
-                    <input type="checkbox" class="filter-checkbox" checked> TAF
+                    <input type="checkbox" class="filter-checkbox" checked style="display: none;"> TAF
                 </label>
                 <label class="filter-group" data-filter="pirep">
-                    <input type="checkbox" class="filter-checkbox"> PIREP
+                    <input type="checkbox" class="filter-checkbox" style="display: none;"> PIREP
                 </label>
                 <label class="filter-group" data-filter="sigmet">
-                    <input type="checkbox" class="filter-checkbox"> SIGMET
+                    <input type="checkbox" class="filter-checkbox" style="display: none;"> SIGMET
                 </label>
                 <label class="filter-group" data-filter="airmet">
-                    <input type="checkbox" class="filter-checkbox"> AIRMET
+                    <input type="checkbox" class="filter-checkbox" style="display: none;"> AIRMET
                 </label>
                 <label class="filter-group" data-filter="winds_aloft">
-                    <input type="checkbox" class="filter-checkbox"> Winds Aloft
+                    <input type="checkbox" class="filter-checkbox" style="display: none;"> Winds Aloft
                 </label>
                 <label class="filter-group active" data-filter="ai">
-                    <input type="checkbox" class="filter-checkbox" checked> AI Analysis
+                    <input type="checkbox" class="filter-checkbox" checked style="display: none;"> AI Analysis
                 </label>
             </div>
         </section>
@@ -614,10 +622,11 @@
                     <h2 class="panel-title">📋 Weather Briefing</h2>
                 </div>
                 <div id="briefing-content">
-                    <div style="text-align: center; padding: 60px 20px; color: var(--text-muted);">
-                        <div style="font-size: 48px; margin-bottom: 16px;">✈️</div>
-                        <h3>Ready for Weather Analysis</h3>
-                        <p>Enter airport codes above to get started with comprehensive weather briefings.</p>
+                    <div style="text-align: center; padding: 80px 20px; color: var(--text-muted);">
+                        <div style="font-size: 64px; margin-bottom: 20px;">✈️</div>
+                        <h3 style="margin-bottom: 12px;">Ready for Weather Analysis</h3>
+                        <p>Enter airport codes above to get comprehensive weather briefings.</p>
+                        <p style="margin-top: 8px; font-size: 14px;">Single airport: <code>KTUS</code> | Route: <code>KLAX,KPHX,KSFO</code></p>
                     </div>
                 </div>
             </div>
@@ -653,7 +662,31 @@
             // Load theme preference
             const savedTheme = localStorage.getItem('theme') || 'light';
             setTheme(savedTheme);
+            
+            setupInputHelpers();
         });
+
+        // Setup input helpers
+        function setupInputHelpers() {
+            const input = document.getElementById('airport-input');
+            
+            input.addEventListener('input', function(e) {
+                const value = e.target.value.trim();
+                const codes = value.split(',').map(c => c.trim()).filter(c => c);
+                
+                if (value.includes(',')) {
+                    updateRouteInfo(`Route Mode: ${codes.length} airports (${codes.join(' → ')})`);
+                } else if (value.length > 0) {
+                    updateRouteInfo('Single Airport Mode');
+                } else {
+                    updateRouteInfo('Map will show airport locations and route weather conditions');
+                }
+            });
+        }
+
+        function updateRouteInfo(text) {
+            document.getElementById('route-info').textContent = text;
+        }
 
         // Theme management
         function toggleTheme() {
@@ -726,16 +759,20 @@
         // Server health check
         async function checkServerHealth() {
             try {
+                console.log('Checking server health...');
                 const response = await fetch('/health');
-                const data = await response.json();
+                console.log('Health response:', response.status);
                 
-                if (data.status === 'healthy') {
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Health data:', data);
                     showStatus('✅ Server is healthy and ready', 'success', 3000);
                 } else {
-                    showStatus('⚠️ Server issues detected', 'error');
+                    throw new Error(`Server returned ${response.status}`);
                 }
             } catch (error) {
-                showStatus('❌ Cannot connect to server', 'error');
+                console.error('Health check failed:', error);
+                showStatus('❌ Cannot connect to server. Make sure Python backend is running on http://localhost:5000', 'error', 0);
             }
         }
 
@@ -751,38 +788,67 @@
             const input = document.getElementById('airport-input').value.trim();
             
             if (!input) {
-                showStatus('Please enter airport codes', 'error');
+                showStatus('Please enter airport codes (e.g., KTUS or KLAX,KPHX,KSFO)', 'error');
                 return;
+            }
+
+            console.log('Input:', input);
+            
+            const airportCodes = input.split(',')
+                .map(code => code.trim().toUpperCase())
+                .filter(code => code.length > 0);
+            
+            console.log('Parsed codes:', airportCodes);
+            
+            if (airportCodes.length === 0) {
+                showStatus('Please enter valid airport codes', 'error');
+                return;
+            }
+
+            // Validate codes
+            for (const code of airportCodes) {
+                if (code.length < 3 || code.length > 4) {
+                    showStatus(`Invalid airport code: ${code}. Use 3-4 letter codes.`, 'error');
+                    return;
+                }
             }
 
             const briefingContent = document.getElementById('briefing-content');
             briefingContent.classList.add('loading');
             
-            // Show loading status
-            const loadingStatus = showStatus('🔄 Analyzing weather data...', 'info', 0);
+            const routeText = airportCodes.length === 1 ? 
+                `single airport ${airportCodes[0]}` : 
+                `route ${airportCodes.join(' → ')}`;
+            
+            const loadingStatus = showStatus(`🔄 Analyzing weather for ${routeText}...`, 'info', 0);
             
             try {
-                const airports = input.split(',').map(code => code.trim().toUpperCase());
-                const filters = getActiveFilters();
-                
                 let data;
-                if (airports.length === 1) {
-                    // Single airport analysis
-                    data = await analyzeSingleAirport(airports[0], filters);
+                
+                if (airportCodes.length === 1) {
+                    console.log('Single airport mode');
+                    data = await analyzeSingleAirport(airportCodes[0]);
                 } else {
-                    // Route analysis
-                    data = await analyzeRoute(airports, filters);
+                    console.log('Route mode');
+                    data = await analyzeRoute(airportCodes);
                 }
+                
+                console.log('Analysis result:', data);
                 
                 currentData = data;
                 displayWeatherData(data);
                 updateMap(data);
                 
                 loadingStatus.remove();
-                showStatus('✅ Weather analysis complete', 'success');
+                
+                const successMessage = airportCodes.length === 1 ? 
+                    `✅ Weather analysis complete for ${airportCodes[0]}` :
+                    `✅ Route analysis complete for ${airportCodes.length} airports`;
+                
+                showStatus(successMessage, 'success');
                 
             } catch (error) {
-                console.error('Weather analysis failed:', error);
+                console.error('Analysis failed:', error);
                 loadingStatus.remove();
                 showStatus(`❌ Analysis failed: ${error.message}`, 'error');
                 
@@ -790,7 +856,9 @@
                     <div style="text-align: center; padding: 40px; color: var(--text-muted);">
                         <div style="font-size: 48px; margin-bottom: 16px;">❌</div>
                         <h3>Analysis Failed</h3>
-                        <p>${error.message}</p>
+                        <p><strong>Input:</strong> ${input}</p>
+                        <p><strong>Parsed as:</strong> ${airportCodes.join(', ')}</p>
+                        <p><strong>Error:</strong> ${error.message}</p>
                         <button class="btn btn-primary" onclick="analyzeWeather()" style="margin-top: 16px;">
                             Try Again
                         </button>
@@ -802,48 +870,55 @@
         }
 
         // Single airport analysis
-        async function analyzeSingleAirport(icao, filters) {
-            const params = new URLSearchParams();
+        async function analyzeSingleAirport(icao) {
+            console.log('Analyzing single airport:', icao);
             
-            Object.keys(filters).forEach(filter => {
-                if (filter !== 'ai') {
-                    params.append(`include_${filter}`, 'true');
-                } else {
-                    params.append('include_ai', 'true');
-                }
-            });
+            const url = `/api/weather/${icao}`;
+            console.log('API call:', url);
             
-            const response = await fetch(`/api/weather/${icao}?${params}`);
+            const response = await fetch(url);
+            console.log('Response status:', response.status);
             
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message || 'Failed to fetch weather data');
+                let errorMessage = `HTTP ${response.status}`;
+                try {
+                    const error = await response.json();
+                    errorMessage = error.message || errorMessage;
+                } catch {
+                    errorMessage = `Server returned ${response.status}. Make sure backend is running.`;
+                }
+                throw new Error(errorMessage);
             }
             
-            return await response.json();
+            const data = await response.json();
+            console.log('Single airport response:', data);
+            return data;
         }
 
         // Route analysis
-        async function analyzeRoute(airports, filters) {
-            const params = new URLSearchParams();
-            params.append('airports', airports.join(','));
+        async function analyzeRoute(airportCodes) {
+            console.log('Analyzing route:', airportCodes);
             
-            Object.keys(filters).forEach(filter => {
-                if (filter !== 'ai') {
-                    params.append(`include_${filter}`, 'true');
-                } else {
-                    params.append('include_ai', 'true');
-                }
-            });
+            const url = `/api/route?airports=${encodeURIComponent(airportCodes.join(','))}`;
+            console.log('Route API call:', url);
             
-            const response = await fetch(`/api/route?${params}`);
+            const response = await fetch(url);
+            console.log('Route response status:', response.status);
             
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message || 'Failed to analyze route');
+                let errorMessage = `HTTP ${response.status}`;
+                try {
+                    const error = await response.json();
+                    errorMessage = error.message || errorMessage;
+                } catch {
+                    errorMessage = `Server returned ${response.status}. Make sure backend is running.`;
+                }
+                throw new Error(errorMessage);
             }
             
-            return await response.json();
+            const data = await response.json();
+            console.log('Route response:', data);
+            return data;
         }
 
         // Display weather data
@@ -851,11 +926,17 @@
             const briefingContent = document.getElementById('briefing-content');
             
             if (data.icao) {
-                // Single airport display
                 displaySingleAirportData(data, briefingContent);
-            } else if (data.route) {
-                // Route display
+            } else if (data.route || data.analysis) {
                 displayRouteData(data, briefingContent);
+            } else {
+                console.error('Unknown data format:', data);
+                briefingContent.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+                        <h3>Unknown Data Format</h3>
+                        <p>Received unexpected data format from server.</p>
+                    </div>
+                `;
             }
         }
 
@@ -869,7 +950,7 @@
                     <div class="airport-header">
                         <div>
                             <div class="airport-name">${data.icao} - ${airport.name || 'Unknown Airport'}</div>
-                            <div style="font-size: 14px; color: var(--text-muted);">
+                            <div style="font-size: 14px; color: var(--text-muted); margin-top: 4px;">
                                 ${airport.city || 'Unknown'}, ${airport.country || 'Unknown'}
                             </div>
                         </div>
@@ -879,7 +960,7 @@
                     </div>
                     
                     <div class="weather-summary">
-                        Current conditions: ${weather.metar?.raw_text || 'No METAR data available'}
+                        <strong>Current conditions:</strong> ${weather.metar?.raw_text || 'No METAR data available'}
                     </div>
             `;
             
@@ -888,19 +969,10 @@
                 html += `
                     <div class="ai-briefing">
                         <div class="ai-section">
-                            <h4>🤖 AI Executive Summary</h4>
+                            <h4>🤖 Executive Summary</h4>
                             <p>${aiBriefing.executive_summary}</p>
                         </div>
                 `;
-                
-                if (aiBriefing.detailed_analysis) {
-                    html += `
-                        <div class="ai-section">
-                            <h4>📊 Detailed Analysis</h4>
-                            <p>${aiBriefing.detailed_analysis}</p>
-                        </div>
-                    `;
-                }
                 
                 if (aiBriefing.operational_impact) {
                     html += `
@@ -939,8 +1011,8 @@
             
             let html = `
                 <div class="fade-in">
-                    <div style="margin-bottom: 20px;">
-                        <h3>Route Analysis: ${route.airports.join(' → ')}</h3>
+                    <div style="margin-bottom: 24px;">
+                        <h3 style="margin-bottom: 12px;">Route Analysis: ${(route?.airports || []).join(' → ')}</h3>
                         <div class="severity-badge severity-${data.overall_conditions}">
                             Overall: ${data.overall_conditions}
                         </div>
@@ -950,9 +1022,9 @@
             // Add AI briefing for route
             if (aiBriefing && aiBriefing.executive_summary) {
                 html += `
-                    <div class="ai-briefing" style="margin-bottom: 20px;">
+                    <div class="ai-briefing" style="margin-bottom: 24px;">
                         <div class="ai-section">
-                            <h4>🤖 Route Executive Summary</h4>
+                            <h4>🤖 Route Summary</h4>
                             <p>${aiBriefing.executive_summary}</p>
                         </div>
                     </div>
@@ -980,7 +1052,7 @@
                     <div class="airport-header">
                         <div>
                             <div class="airport-name">${airportData.code} - ${airport.name || 'Unknown Airport'}</div>
-                            <div style="font-size: 14px; color: var(--text-muted);">
+                            <div style="font-size: 14px; color: var(--text-muted); margin-top: 4px;">
                                 ${airport.city || 'Unknown'}, ${airport.country || 'Unknown'}
                             </div>
                         </div>
@@ -990,7 +1062,7 @@
                     </div>
                     
                     <div class="weather-summary">
-                        ${weather?.raw_text || 'No weather data available'}
+                        <strong>Current:</strong> ${weather?.raw_text || 'No weather data available'}
                     </div>
                     
                     ${createRawDataSection(weather ? {metar: weather} : {}, airportData.code)}
@@ -1005,18 +1077,18 @@
                         📝 Show Raw Data
                     </button>
                     <div class="raw-data-content" id="raw-data-${icao}">
-                        ${weather.metar?.raw_text ? `
+                        ${weather?.metar?.raw_text || weather?.raw_text ? `
                             <div>
                                 <strong>METAR:</strong>
-                                <div class="raw-code">${weather.metar.raw_text}</div>
+                                <div class="raw-code">${weather.metar?.raw_text || weather.raw_text || 'No METAR data'}</div>
                             </div>
-                        ` : ''}
-                        ${weather.taf?.raw_text ? `
+                        ` : '<div class="raw-code">No METAR data available</div>'}
+                        ${weather?.taf?.raw_text ? `
                             <div>
                                 <strong>TAF:</strong>
                                 <div class="raw-code">${weather.taf.raw_text}</div>
                             </div>
-                        ` : ''}
+                        ` : '<div class="raw-code">No TAF data available</div>'}
                     </div>
                 </div>
             `;
@@ -1037,14 +1109,11 @@
 
         // Map management
         function updateMap(data) {
-            // Clear existing markers and routes
             clearMap();
             
             if (data.icao) {
-                // Single airport
                 updateMapForSingleAirport(data);
             } else if (data.timeline) {
-                // Route
                 updateMapForRoute(data);
             }
         }
@@ -1067,10 +1136,10 @@
                 const color = getSeverityColor(severity);
                 
                 const marker = L.circleMarker([airport.latitude, airport.longitude], {
-                    radius: 12,
+                    radius: 15,
                     fillColor: color,
                     color: '#ffffff',
-                    weight: 2,
+                    weight: 3,
                     opacity: 1,
                     fillOpacity: 0.8
                 }).addTo(map);
@@ -1078,7 +1147,7 @@
                 marker.bindPopup(`
                     <div>
                         <strong>${data.icao} - ${airport.name}</strong><br>
-                        <span style="color: ${color};">${severity} conditions</span><br>
+                        <span style="color: ${color}; font-weight: bold;">${severity} conditions</span><br>
                         ${airport.city}, ${airport.country}
                     </div>
                 `);
@@ -1102,7 +1171,7 @@
                 const color = getSeverityColor(point.severity);
                 
                 const marker = L.circleMarker([point.latitude, point.longitude], {
-                    radius: 10,
+                    radius: 12,
                     fillColor: color,
                     color: '#ffffff',
                     weight: 2,
@@ -1110,13 +1179,13 @@
                     fillOpacity: 0.8
                 }).addTo(map);
                 
-                const position = index === 0 ? 'Departure' : 
-                               index === validPoints.length - 1 ? 'Arrival' : 'Waypoint';
+                const position = index === 0 ? '🛫 Departure' : 
+                               index === validPoints.length - 1 ? '🛬 Arrival' : '📍 Waypoint';
                 
                 marker.bindPopup(`
                     <div>
                         <strong>${point.icao} - ${point.name}</strong><br>
-                        <span style="color: ${color};">${point.severity} conditions</span><br>
+                        <span style="color: ${color}; font-weight: bold;">${point.severity} conditions</span><br>
                         ${position}
                     </div>
                 `);
@@ -1132,17 +1201,15 @@
                 
                 routeLine = L.polyline(coordinates, {
                     color: routeColor,
-                    weight: 4,
-                    opacity: 0.8
+                    weight: 5,
+                    opacity: 0.7
                 }).addTo(map);
                 
-                map.fitBounds(routeLine.getBounds(), { padding: [20, 20] });
-            } else {
-                map.setView([validPoints[0].latitude, validPoints[0].longitude], 8);
+                map.fitBounds(routeLine.getBounds(), { padding: [30, 30] });
             }
             
             // Update route info
-            const routeString = data.route.airports.join(' → ');
+            const routeString = data.route?.airports?.join(' → ') || 'Unknown Route';
             document.getElementById('route-info').textContent = 
                 `🛫 Route: ${routeString} | Overall: ${data.overall_conditions}`;
         }
